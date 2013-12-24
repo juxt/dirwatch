@@ -9,7 +9,7 @@ Similar to ojo (but simpler, unlimited watchers allowed and directory recursive)
 ## Usage
 
 ```clojure
-    (require '[pro.juxt.dirwatch :refer (watch-dir)])
+    (require '[juxt.dirwatch :refer (watch-dir)])
 
     (watch-dir println (clojure.java.io/file "/tmp"))
 ```

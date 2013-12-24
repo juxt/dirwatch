@@ -12,7 +12,7 @@
 (ns ^{:doc "Directory watcher"
       :author "Malcolm Sparks"
       :requires "JDK7"}
-  pro.juxt.dirwatch
+  juxt.dirwatch
   (:import (java.io File)
            (java.nio.file FileSystems StandardWatchEventKinds WatchService Path)
            (java.util.concurrent TimeUnit)))

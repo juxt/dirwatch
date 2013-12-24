@@ -9,7 +9,7 @@
 ;;
 ;; You must not remove this notice, or any other, from this software.
 
-(defproject pro.juxt/dirwatch "0.1.0"
+(defproject juxt/dirwatch "0.2.0"
   :description "A directory watcher, wrapping the JDK 7 java.nio.file.WatchService."
   :url "https://juxt.pro/repos/dirwatch"
   :license {:name "Eclipse Public License"

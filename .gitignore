@@ -11,3 +11,4 @@ pom.xml
 /.gitold
 /tmp
 /.lein-repl-history
+/pom.xml.asc
