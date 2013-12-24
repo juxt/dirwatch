@@ -6,6 +6,15 @@ Similar to watchtower (but uses JDK 7 async notification mechanisms rather than 
 
 Similar to ojo (but simpler, unlimited watchers allowed and directory recursive)
 
+## Installation
+
+Add the following dependency to your `project.clj` file
+
+```clojure
+[juxt/dirwatch "0.2.0"]
+```
+
+
 ## Usage
 
 ```clojure
