@@ -43,7 +43,7 @@
           (let [file (.toFile (.resolve (.watchable k) (.context ev)))]
             (when (and (= (.kind ev) StandardWatchEventKinds/ENTRY_CREATE)
                        (.isDirectory file))
-              (register-path ws (.toPath f)))
+              (register-path ws (.toPath file)))
             (f {:file file
                 :count (.count ev)
                 :action (get {StandardWatchEventKinds/ENTRY_CREATE :create
