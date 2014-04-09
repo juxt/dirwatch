@@ -20,17 +20,21 @@
 ;; TODO: Implement a version that uses polling to emulate this functionality on JDK6 and below.
 
 (defn ^:private register-path
-  "Register a watch service with a filesystem path."
-  [^WatchService ws ^Path path]
+  "Register a watch service with a filesystem path.
+
+  When collect-children? is set, returns a list of artificial events for files seen during recursion"
+  [^WatchService ws, ^Path path & [event-atom]]
   (.register path ws
              (into-array
               (type StandardWatchEventKinds/ENTRY_CREATE)
               [StandardWatchEventKinds/ENTRY_CREATE
                StandardWatchEventKinds/ENTRY_DELETE
                StandardWatchEventKinds/ENTRY_MODIFY]))
-  (doseq [dir (.. path toAbsolutePath toFile listFiles)
-          :when (. dir isDirectory)]
-    (register-path ws (. dir toPath))))
+  (doseq [dir (.. path toAbsolutePath toFile listFiles)]
+    (when (. dir isDirectory)
+          (register-path ws (. dir toPath) event-atom))
+    (when event-atom
+          (swap! event-atom conj {:file dir, :count 1, :action :create}))))
 
 (defn ^:private wait-for-events [ws f]
   (when ws ;; nil when this watcher is closed
@@ -41,15 +45,18 @@
       (when (and k (.isValid k))
         (doseq [ev (.pollEvents k)]
           (let [file (.toFile (.resolve (.watchable k) (.context ev)))]
-            (when (and (= (.kind ev) StandardWatchEventKinds/ENTRY_CREATE)
-                       (.isDirectory file))
-              (register-path ws (.toPath f)))
             (f {:file file
                 :count (.count ev)
                 :action (get {StandardWatchEventKinds/ENTRY_CREATE :create
                               StandardWatchEventKinds/ENTRY_DELETE :delete
                               StandardWatchEventKinds/ENTRY_MODIFY :modify}
-                             (.kind ev))})))
+                             (.kind ev))})
+            (when (and (= (.kind ev) StandardWatchEventKinds/ENTRY_CREATE)
+                       (.isDirectory file))
+              (let [artificial-events (atom (list))]
+                (register-path ws (.toPath file) artificial-events)
+                (doseq [event @artificial-events]
+                  (f event))))))
         ;; Cancel a key if the reset fails, this may indicate the path no longer exists
         (when-not (. k reset) (. k cancel)))
 
