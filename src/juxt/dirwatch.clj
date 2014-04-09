@@ -43,7 +43,7 @@
           (let [file (.toFile (.resolve (.watchable k) (.context ev)))]
             (when (and (= (.kind ev) StandardWatchEventKinds/ENTRY_CREATE)
                        (.isDirectory file))
-              (register-path ws (.toPath f)))
+              (register-path ws (.toPath file)))
             (f {:file file
                 :count (.count ev)
                 :action (get {StandardWatchEventKinds/ENTRY_CREATE :create
@@ -61,10 +61,10 @@
 
 ;; Here's how you might use watch-dir :-
 ;;
-;; (watch-dir (io/file "/tmp") println)
+;; (watch-dir println (io/file "/tmp"))
 (defn watch-dir
   "Watch a directory for changes, and call the function f when it
-  does. Returns a watch (an agent) that is activley watching a
+  does. Returns a watch (an agent) that is actively watching a
   directory. The implementation uses a capability since Java 7 that
   wraps inotify on Linux and equivalent mechanisms on other operating
   systems. The watcher returned by this function is a resource which
