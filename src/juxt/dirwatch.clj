@@ -84,7 +84,6 @@
 (defn close-watcher
   "Close an existing watcher and free up it's resources."
   [watcher]
-  (when [watcher]
-    (send-off watcher (fn [w]
-                        (when w (.close w))
-                        nil))))
+  (send-off watcher (fn [w]
+                      (when w (.close w))
+                      nil)))
