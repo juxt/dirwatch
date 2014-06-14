@@ -43,7 +43,8 @@
     timeout because this allows us to (eventually) free up the thread
     after the watcher is closed."))]
       (when (and k (.isValid k))
-        (doseq [ev (.pollEvents k)]
+        (doseq [ev (.pollEvents k) :when (not= (.kind ev)
+                                               StandardWatchEventKinds/OVERFLOW)]
           (let [file (.toFile (.resolve (.watchable k) (.context ev)))]
             (f {:file file
                 :count (.count ev)
