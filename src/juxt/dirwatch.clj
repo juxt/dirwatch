@@ -66,6 +66,14 @@
       ;; Retain the watch service as the agent state.
       ws)))
 
+(defn- continue-on-exception
+  [f]
+  (fn [x]
+    (try
+      (f x)
+      (catch Throwable e
+        (.printStackTrace e)))))
+
 ;; Here's how you might use watch-dir :-
 ;;
 ;; (watch-dir (io/file "/tmp") println)
@@ -79,7 +87,8 @@
   [f & files]
   (let [ws (.newWatchService (FileSystems/getDefault))]
     (doseq [file files :when (.exists file)] (register-path ws (. file toPath)))
-    (send-off (agent ws :meta {::watcher true}) wait-for-events f)))
+    (send-off (agent ws :meta {::watcher true})
+              wait-for-events (continue-on-exception f))))
 
 (defn close-watcher
   "Close an existing watcher and free up it's resources."
