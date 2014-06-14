@@ -13,7 +13,7 @@
   (:require
    [clojure.java.io :refer (file delete-file) :as io]
    [clojure.test :refer :all]
-   [juxt.dirwatch :refer (watch-dir)]))
+   [juxt.dirwatch :refer (watch-dir close-watcher)]))
 
 (deftest test-notifications
   (let [dir (file "tmp" (str (gensym "dirwatch")))
@@ -31,3 +31,11 @@
         (is (= (map :action @log) [:create :modify :delete]))
         )
       (finally (delete-file dir)))))
+
+(deftest cannot-mistakenly-call-close-in-another-agent
+  (let [watcher (watch-dir (constantly nil) (file ""))
+        another-agent-mistake (agent 0)]
+    (try
+      (is (thrown? java.lang.AssertionError
+                   (close-watcher another-agent-mistake)))
+      (finally (close-watcher watcher)))))
