@@ -13,7 +13,7 @@
   (:require
    [clojure.java.io :refer (file delete-file) :as io]
    [clojure.test :refer :all]
-   [pro.juxt.dirwatch :refer (watch-dir)]))
+   [juxt.dirwatch :refer (watch-dir)]))
 
 (deftest test-notifications
   (let [dir (file "tmp" (str (gensym "dirwatch")))
