@@ -87,8 +87,13 @@
   [f & files]
   (let [ws (.newWatchService (FileSystems/getDefault))]
     (doseq [file files :when (.exists file)] (register-path ws (. file toPath)))
-    (send-off (agent ws :meta {::watcher true})
-              wait-for-events (continue-on-exception f))))
+    (let [f (continue-on-exception f)]
+      (send-off (agent ws
+                       :meta {::watcher true}
+                       :error-handler (fn [ag ex]
+                                        (.printStackTrace ex)
+                                        (send-off ag wait-for-events f)))
+                wait-for-events f))))
 
 (defn close-watcher
   "Close an existing watcher and free up it's resources."
