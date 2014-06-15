@@ -29,12 +29,13 @@
 
 (deftest test-notifications
   (let [dir (temp-directory)
-        log (notifications-fn)]
+        log (notifications-fn)
+        ag (watch-dir log dir)]
     (try
-      (let [ag (watch-dir log dir)]
-        (let [f (file dir "foo.txt")]
-          (spit f "A test file")
-          (delete-file f))
+      (let [f (file dir "foo.txt")]
+        (spit f "A test file")
+        (delete-file f)
+
         (await ag)
         (await-for 2000 ag) ;; Sometimes an extra call to await-for is
                             ;; needed to receive all events.
@@ -58,9 +59,9 @@
   [& fns]
   (let [a (atom fns)]
     (fn [& args]
-      (let [f (first @a)
-            _ (swap! a (comp (fnil identity fns)
-                             next))]
+      (let [f (first @a)]
+        (swap! a (comp (fnil identity fns)
+                       next))
         (apply f args)))))
 
 (deftest if-the-reporting-function-sends-an-exception-it-must-keep-watching
@@ -70,12 +71,12 @@
                                   #(throw (ex-info "Intended error" %))
                                   (repeat log))
                            dir)
-        f (file dir "foo.txt")
-        _ (spit f "A test file")
-        _ (delete-file f)]
+        f (file dir "foo.txt")]
     (try
-      (await-for 250 watcher)
+      (spit f "A test file")
+      (delete-file f)
 
+      (await-for 250 watcher)
       (await-for 2000 watcher) ;; Sometimes an extra call to await-for
                                ;; is needed to receive all events.
 
