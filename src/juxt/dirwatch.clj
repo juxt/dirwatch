@@ -43,7 +43,8 @@
     timeout because this allows us to (eventually) free up the thread
     after the watcher is closed."))]
       (when (and k (.isValid k))
-        (doseq [ev (.pollEvents k)]
+        (doseq [ev (.pollEvents k) :when (not= (.kind ev)
+                                               StandardWatchEventKinds/OVERFLOW)]
           (let [file (.toFile (.resolve (.watchable k) (.context ev)))]
             (f {:file file
                 :count (.count ev)
@@ -66,6 +67,14 @@
       ;; Retain the watch service as the agent state.
       ws)))
 
+(defn- continue-on-exception
+  [f]
+  (fn [x]
+    (try
+      (f x)
+      (catch Throwable e
+        (.printStackTrace e)))))
+
 ;; Here's how you might use watch-dir :-
 ;;
 ;; (watch-dir (io/file "/tmp") println)
@@ -77,14 +86,20 @@
   systems. The watcher returned by this function is a resource which
   should be closed with close-watcher."
   [f & files]
-  (let [ws (.newWatchService (FileSystems/getDefault))]
+  (let [ws (.newWatchService (FileSystems/getDefault))
+        f (continue-on-exception f)]
     (doseq [file files :when (.exists file)] (register-path ws (. file toPath)))
-    (send-off (agent ws) wait-for-events f)))
+    (send-off (agent ws
+                     :meta {::watcher true}
+                     :error-handler (fn [ag ex]
+                                      (.printStackTrace ex)
+                                      (send-off ag wait-for-events f)))
+              wait-for-events f)))
 
 (defn close-watcher
   "Close an existing watcher and free up it's resources."
   [watcher]
-  (when [watcher]
-    (send-off watcher (fn [w]
-                        (when w (.close w))
-                        nil))))
+  {:pre [(::watcher (meta watcher))]}
+  (send-off watcher (fn [w]
+                      (when w (.close w))
+                      nil)))
