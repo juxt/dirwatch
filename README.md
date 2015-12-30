@@ -10,10 +10,7 @@ Similar to ojo (but simpler, unlimited watchers allowed and directory recursive)
 
 Add the following dependency to your `project.clj` file
 
-```clojure
-[juxt/dirwatch "0.2.2"]
-```
-
+[![Clojars Project](http://clojars.org/juxt/dirwatch/latest-version.svg)](http://clojars.org/juxt/dirwatch)
 
 ## Usage
 
