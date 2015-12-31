@@ -80,7 +80,7 @@
 ;; (watch-dir (io/file "/tmp") println)
 (defn watch-dir
   "Watch a directory for changes, and call the function f when it
-  does. Returns a watch (an agent) that is activley watching a
+  does. Returns a watch (an agent) that is actively watching a
   directory. The implementation uses a capability since Java 7 that
   wraps inotify on Linux and equivalent mechanisms on other operating
   systems. The watcher returned by this function is a resource which
