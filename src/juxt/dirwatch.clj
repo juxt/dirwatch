@@ -15,9 +15,19 @@
   juxt.dirwatch
   (:import (java.io File)
            (java.nio.file FileSystems StandardWatchEventKinds WatchService Path)
-           (java.util.concurrent TimeUnit)))
+           (java.util.concurrent Executors ThreadFactory TimeUnit)))
 
 ;; TODO: Implement a version that uses polling to emulate this functionality on JDK6 and below.
+
+(defonce pool-counter (atom 0))
+
+(defonce pool
+  (Executors/newCachedThreadPool
+    (reify ThreadFactory
+      (newThread [_ runnable]
+         (doto (Thread. runnable)
+           (.setName "dirwatch-pool-" (swap! pool-counter inc))
+           (.setDaemon true))))))
 
 (defn ^:private register-path
   "Register a watch service with a filesystem path.
@@ -62,7 +72,7 @@
         (when-not (. k reset) (. k cancel)))
 
       ;; Repeat ad-infinitum
-      (send-off *agent* wait-for-events f)
+      (send-via pool *agent* wait-for-events f)
 
       ;; Retain the watch service as the agent state.
       ws)))
@@ -89,17 +99,17 @@
   (let [ws (.newWatchService (FileSystems/getDefault))
         f (continue-on-exception f)]
     (doseq [file files :when (.exists file)] (register-path ws (. file toPath)))
-    (send-off (agent ws
-                     :meta {::watcher true}
-                     :error-handler (fn [ag ex]
-                                      (.printStackTrace ex)
-                                      (send-off ag wait-for-events f)))
+    (send-via pool (agent ws
+                          :meta {::watcher true}
+                          :error-handler (fn [ag ex]
+                                           (.printStackTrace ex)
+                                           (send-via pool ag wait-for-events f)))
               wait-for-events f)))
 
 (defn close-watcher
   "Close an existing watcher and free up it's resources."
   [watcher]
   {:pre [(::watcher (meta watcher))]}
-  (send-off watcher (fn [w]
-                      (when w (.close w))
-                      nil)))
+  (send-via pool watcher (fn [w]
+                             (when w (.close w))
+                             nil)))
