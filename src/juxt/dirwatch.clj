@@ -87,7 +87,7 @@
 
 ;; Here's how you might use watch-dir :-
 ;;
-;; (watch-dir (io/file "/tmp") println)
+;; (watch-dir println (io/file "/tmp"))
 (defn watch-dir
   "Watch a directory for changes, and call the function f when it
   does. Returns a watch (an agent) that is activley watching a
