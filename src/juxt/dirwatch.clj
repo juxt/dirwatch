@@ -25,9 +25,9 @@
   (Executors/newCachedThreadPool
     (reify ThreadFactory
       (newThread [_ runnable]
-         (doto (Thread. runnable)
-           (.setName "dirwatch-pool-" (swap! pool-counter inc))
-           (.setDaemon true))))))
+        (doto (Thread. runnable)
+          (.setName (str "dirwatch-pool-" (swap! pool-counter inc)))
+          (.setDaemon true))))))
 
 (defn ^:private register-path
   "Register a watch service with a filesystem path.
