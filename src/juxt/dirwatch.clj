@@ -14,8 +14,10 @@
       :requires "JDK7"}
   juxt.dirwatch
   (:import (java.io File)
-           (java.nio.file FileSystems StandardWatchEventKinds WatchService Path)
+           (java.nio.file FileSystems Path StandardWatchEventKinds WatchEvent WatchKey WatchService)
            (java.util.concurrent Executors ThreadFactory TimeUnit)))
+
+(set! *warn-on-reflection* true)
 
 ;; TODO: Implement a version that uses polling to emulate this functionality on JDK6 and below.
 
@@ -40,22 +42,22 @@
               [StandardWatchEventKinds/ENTRY_CREATE
                StandardWatchEventKinds/ENTRY_DELETE
                StandardWatchEventKinds/ENTRY_MODIFY]))
-  (doseq [dir (.. path toAbsolutePath toFile listFiles)]
+  (doseq [^File dir (.. path toAbsolutePath toFile listFiles)]
     (when (. dir isDirectory)
           (register-path ws (. dir toPath) event-atom))
     (when event-atom
           (swap! event-atom conj {:file dir, :count 1, :action :create}))))
 
-(defn ^:private wait-for-events [ws f]
+(defn ^:private wait-for-events [^WatchService ws f]
   (when ws ;; nil when this watcher is closed
 
-    (let [k (.poll ws (long 5) TimeUnit/SECONDS #_(comment "We set a
+    (let [^WatchKey k (.poll ws (long 5) TimeUnit/SECONDS #_(comment "We set a
     timeout because this allows us to (eventually) free up the thread
     after the watcher is closed."))]
       (when (and k (.isValid k))
-        (doseq [ev (.pollEvents k) :when (not= (.kind ev)
+        (doseq [^WatchEvent ev (.pollEvents k) :when (not= (.kind ev)
                                                StandardWatchEventKinds/OVERFLOW)]
-          (let [file (.toFile (.resolve (.watchable k) (.context ev)))]
+          (let [file (.toFile (.resolve ^Path (cast Path (.watchable k)) ^Path (cast Path (.context ev))))]
             (f {:file file
                 :count (.count ev)
                 :action (get {StandardWatchEventKinds/ENTRY_CREATE :create
@@ -98,10 +100,10 @@
   [f & files]
   (let [ws (.newWatchService (FileSystems/getDefault))
         f (continue-on-exception f)]
-    (doseq [file files :when (.exists file)] (register-path ws (. file toPath)))
+    (doseq [^File file files :when (.exists file)] (register-path ws (. file toPath)))
     (send-via pool (agent ws
                           :meta {::watcher true}
-                          :error-handler (fn [ag ex]
+                          :error-handler (fn [ag ^Throwable ex]
                                            (.printStackTrace ex)
                                            (send-via pool ag wait-for-events f)))
               wait-for-events f)))
@@ -110,6 +112,6 @@
   "Close an existing watcher and free up it's resources."
   [watcher]
   {:pre [(::watcher (meta watcher))]}
-  (send-via pool watcher (fn [w]
+  (send-via pool watcher (fn [^WatchService w]
                              (when w (.close w))
                              nil)))
