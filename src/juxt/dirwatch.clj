@@ -13,7 +13,8 @@
       :author "Malcolm Sparks"
       :requires "JDK7"}
   juxt.dirwatch
-  (:import (java.io File)
+  (:import (com.sun.nio.file SensitivityWatchEventModifier)
+           (java.io File)
            (java.nio.file FileSystems Path StandardWatchEventKinds WatchEvent WatchKey WatchService)
            (java.util.concurrent Executors ThreadFactory TimeUnit)))
 
@@ -41,7 +42,10 @@
               (type StandardWatchEventKinds/ENTRY_CREATE)
               [StandardWatchEventKinds/ENTRY_CREATE
                StandardWatchEventKinds/ENTRY_DELETE
-               StandardWatchEventKinds/ENTRY_MODIFY]))
+               StandardWatchEventKinds/ENTRY_MODIFY])
+             (into-array
+              (type SensitivityWatchEventModifier/HIGH)
+              [SensitivityWatchEventModifier/HIGH]))
   (doseq [^File dir (.. path toAbsolutePath toFile listFiles)]
     (when (. dir isDirectory)
           (register-path ws (. dir toPath) event-atom))
